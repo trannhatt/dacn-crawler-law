@@ -29,10 +29,10 @@ app.post("/crawl", async (req, res) => {
       .text()
       .trim();
     const ngayBanHanh = $("td:contains('Ngày ban hành:')").next().text().trim();
-    const tenVanBan = $("title").text().trim();
     const noiDungVanBan = $(".content1").html();
-
-    // Lấy thời gian hiện tại theo múi giờ của Việt Nam
+    const title = $("title").text().trim();
+    const match = title.match(/(.+)\s+mới nhất$/);
+    const tenVanBan = match ? match[1] : title;
     const now = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD HH:mm:ss");
 
     const crawledData = {

@@ -27,6 +27,10 @@
             margin: 8px 0;
             border: none;
             cursor: pointer;
+            /* width: 100%; */
+        }
+
+        .input-crawl {
             width: 100%;
         }
 
@@ -56,6 +60,30 @@
             width: 20px;
 
         }
+
+        .pagination {
+            text-align: center;
+            margin: 20px 50px;
+        }
+
+        .search-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #searchInput {
+            padding: 8px;
+            width: 30%;
+            margin-bottom: 10px;
+        }
+
+        #searchInput:focus {
+            outline: none;
+        }
+
+        .highlight {
+            background-color: yellow;
+        }
     </style>
 </head>
 
@@ -65,17 +93,21 @@
         <form id="crawlForm" method="post">
             <label for="link">Enter link to crawl:</label><br>
             <input type="text" id="link" name="link" placeholder="Enter link...">
-            <input type="submit" value="Crawl">
+            <input type="submit" value="Crawl" class="input-crawl">
         </form>
     </div>
     <div id="notification" style="display: none;">
         <p id="notificationMessage" style="background-color: red; color: white; padding: 10px;"></p>
     </div>
+    <div class="search-container">
+        <input type="text" id="searchInput" onkeyup="search()" placeholder="Search...">
+    </div>
     <div class="table-crawl">
         <table class="table table-bordered">
             <thead>
                 <tr>
-                    <th scope="col">ID</th> <!-- Thêm cột ID vào đây -->
+                    <th scope="col">STT</th>
+                    <th scope="col">ID</th>
                     <th class="link-cell" scope="col">Liên kết</th>
                     <th scope="col">Tên văn bản</th>
                     <th scope="col">Số hiệu</th>
@@ -91,6 +123,13 @@
             </tbody>
         </table>
     </div>
+
+    <div class="pagination">
+        <button onclick="changePage(-1)">Prev</button>
+        <span id="pageInfo"></span>
+        <button onclick="changePage(1)">Next</button>
+    </div>
+
     <script>
         document.getElementById('crawlForm').addEventListener('submit', async function (event) {
             event.preventDefault();
@@ -121,48 +160,6 @@
                 console.error('Error showing document detail:', error);
             }
         }
-
-        async function fetchDocumentSummary() {
-            try {
-                const response = await fetch('/document-summary');
-                const data = await response.json();
-                const tbody = document.getElementById('document-content1');
-                tbody.innerHTML = '';
-                if (Array.isArray(data)) {
-                    data.forEach(item => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                    <td class="link-cell">${item._id}</td>
-                    <td class="link-cell"><a href="${item.link}" target="_blank">${item.link}</a></td>
-                    <td>${item.tenVanBan}</td>
-                    <td>${item.sohieu}</td>
-                    <td>${item.loaiVanBan}</td>
-                    <td>${item.coQuanBanHanh}</td>
-                    <td>${item.ngayBanHanh}</td>
-                    <td>${item.ngayThem}</td>
-                    <td><button onclick="showDetail('${item._id}')">detail</button></td> 
-                    <td><button onclick="deleteDocument('${item._id}')">delete</button></td> 
-                `;
-                        tbody.appendChild(row);
-                    });
-                } else {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                <td>${data._id}</td>
-                <td><a href="${data.link}" target="_blank">${data.link}</a></td>
-                <td>${data.tenVanBan}</td>
-                <td>${data.sohieu}</td>
-                <td>${data.loaiVanBan}</td>
-                <td>${data.coQuanBanHanh}</td>
-                <td>${data.ngayBanHanh}</td>
-                <td>${item.ngayThem}</td>
-            `;
-                    tbody.appendChild(row);
-                }
-            } catch (error) {
-                console.error('Error fetching document summary:', error);
-            }
-        }
         async function deleteDocument(documentId) {
             try {
                 const response = await fetch(`/delete-document?id=${documentId}`, {
@@ -178,6 +175,85 @@
                 console.error('Error deleting document:', error);
             }
         }
+        let currentPage = 1;
+        const rowsPerPage = 10;
+        let totalPages = 1;
+
+        let data = [];
+
+        async function fetchDocumentSummary() {
+            try {
+                const response = await fetch('/document-summary');
+                data = await response.json();
+                totalPages = Math.ceil(data.length / rowsPerPage);
+                displayPageInfo();
+                displayDataInTable(data, currentPage);
+            } catch (error) {
+                console.error('Error fetching document summary:', error);
+            }
+        }
+
+        function highlightSearchTerm(text, searchTerm) {
+            if (!searchTerm) {
+                return text;
+            }
+            const regex = new RegExp(`(${searchTerm})`, 'gi');
+            return text.replace(regex, `<span class="highlight">$1</span>`);
+        }
+
+        function displayDataInTable(data, page, searchTerm = '') {
+            const start = (page - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const paginatedItems = data.slice(start, end);
+
+            const tbody = document.getElementById('document-content1');
+            tbody.innerHTML = '';
+
+            let stt = start + 1;
+            paginatedItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+            <td>${stt++}</td>
+            <td class="link-cell">${item._id}</td>
+            <td class="link-cell"><a href="${item.link}" target="_blank">${highlightSearchTerm(item.link, searchTerm)}</a></td>
+            <td>${highlightSearchTerm(item.tenVanBan, searchTerm)}</td>
+            <td>${highlightSearchTerm(item.sohieu, searchTerm)}</td>
+            <td>${highlightSearchTerm(item.loaiVanBan, searchTerm)}</td>
+            <td>${highlightSearchTerm(item.coQuanBanHanh, searchTerm)}</td>
+            <td>${highlightSearchTerm(item.ngayBanHanh, searchTerm)}</td>
+            <td>${item.ngayThem}</td>
+            <td><button onclick="showDetail('${item._id}')">Chi tiết</button></td>
+            <td><button onclick="deleteDocument('${item._id}')">Xóa</button></td>
+        `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            currentPage = Math.max(1, Math.min(currentPage, totalPages));
+            fetchDocumentSummary();
+            displayPageInfo();
+        }
+
+        function displayPageInfo() {
+            const pageInfo = document.getElementById('pageInfo');
+            pageInfo.innerText = `${currentPage} / ${totalPages}`;
+        }
+        function search() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const filteredData = data.filter(item =>
+                item.tenVanBan.toLowerCase().includes(searchText) ||
+                item.sohieu.toLowerCase().includes(searchText) ||
+                item.loaiVanBan.toLowerCase().includes(searchText) ||
+                item.coQuanBanHanh.toLowerCase().includes(searchText) ||
+                item.ngayBanHanh.toLowerCase().includes(searchText)
+            );
+            displayDataInTable(filteredData, currentPage, searchText);
+            totalPages = Math.ceil(filteredData.length / rowsPerPage);
+            displayPageInfo();
+        }
+
         window.onload = function () {
             fetchDocumentSummary();
         }
