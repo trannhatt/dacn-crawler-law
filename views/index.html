@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Data Crawler</title>
+    <style>
+        body {
+            background-color: blanchedalmond;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        input[type=text] {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+
+        input[type=submit],
+        button {
+            background-color: black;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .form-crawl {
+            margin: 10px 300px;
+        }
+
+        .table-crawl {
+            margin: 0px 50px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .link-cell {
+            width: 20px;
+
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="form-crawl">
+        <form id="crawlForm" method="post">
+            <label for="link">Enter link to crawl:</label><br>
+            <input type="text" id="link" name="link" placeholder="Enter link...">
+            <input type="submit" value="Crawl">
+        </form>
+    </div>
+    <div id="notification" style="display: none;">
+        <p id="notificationMessage" style="background-color: red; color: white; padding: 10px;"></p>
+    </div>
+    <div class="table-crawl">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th scope="col">ID</th> <!-- Thêm cột ID vào đây -->
+                    <th class="link-cell" scope="col">Liên kết</th>
+                    <th scope="col">Tên văn bản</th>
+                    <th scope="col">Số hiệu</th>
+                    <th scope="col">Loại văn bản</th>
+                    <th scope="col">Cơ quan ban hành</th>
+                    <th scope="col">Ngày ban hành</th>
+                    <th scope="col">Ngày crawl</th>
+                    <th scope="col"></th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+            <tbody id="document-content1">
+            </tbody>
+        </table>
+    </div>
+    <script>
+        document.getElementById('crawlForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const link = document.getElementById('link').value;
+
+            try {
+                const response = await fetch('/crawl', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ link: link })
+                });
+                const result = await response.text();
+                alert(result);
+                location.reload(true);
+
+            } catch (error) {
+                console.error('Error occurred while crawling:', error);
+                alert('An error occurred while crawling. Please try again.');
+            }
+        });
+        async function showDetail(documentId) {
+            try {
+                window.location.href = `/detail.html?id=${documentId}`;
+            } catch (error) {
+                console.error('Error showing document detail:', error);
+            }
+        }
+
+        async function fetchDocumentSummary() {
+            try {
+                const response = await fetch('/document-summary');
+                const data = await response.json();
+                const tbody = document.getElementById('document-content1');
+                tbody.innerHTML = '';
+                if (Array.isArray(data)) {
+                    data.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                    <td class="link-cell">${item._id}</td>
+                    <td class="link-cell"><a href="${item.link}" target="_blank">${item.link}</a></td>
+                    <td>${item.tenVanBan}</td>
+                    <td>${item.sohieu}</td>
+                    <td>${item.loaiVanBan}</td>
+                    <td>${item.coQuanBanHanh}</td>
+                    <td>${item.ngayBanHanh}</td>
+                    <td>${item.ngayThem}</td>
+                    <td><button onclick="showDetail('${item._id}')">detail</button></td> 
+                    <td><button onclick="deleteDocument('${item._id}')">delete</button></td> 
+                `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                <td>${data._id}</td>
+                <td><a href="${data.link}" target="_blank">${data.link}</a></td>
+                <td>${data.tenVanBan}</td>
+                <td>${data.sohieu}</td>
+                <td>${data.loaiVanBan}</td>
+                <td>${data.coQuanBanHanh}</td>
+                <td>${data.ngayBanHanh}</td>
+                <td>${item.ngayThem}</td>
+            `;
+                    tbody.appendChild(row);
+                }
+            } catch (error) {
+                console.error('Error fetching document summary:', error);
+            }
+        }
+        async function deleteDocument(documentId) {
+            try {
+                const response = await fetch(`/delete-document?id=${documentId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    fetchDocumentSummary();
+                } else {
+                    console.error('Error deleting document');
+                }
+            } catch (error) {
+                console.error('Error deleting document:', error);
+            }
+        }
+        window.onload = function () {
+            fetchDocumentSummary();
+        }
+    </script>
+</body>
+
+</html>

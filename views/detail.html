@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>detail</title>
+    <style>
+        #document-detail {
+            margin-left: 250px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            width: 60%;
+            background-color: white;
+        }
+
+        body {
+            background-color: blanchedalmond;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        button {
+            background-color: black;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            cursor: pointer;
+
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Detail</h2>
+    <button id="back-button">Back</button>
+    <div id="document-detail">
+    </div>
+    <script>
+        async function fetchDocumentDetail() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const documentId = urlParams.get('id');
+                const response = await fetch(`/document-detail?id=${documentId}`);
+                const data = await response.json();
+                document.getElementById('document-detail').innerHTML = data.noiDungVanBan;
+            } catch (error) {
+                console.error('Error fetching document detail:', error);
+            }
+        }
+        function navigateBack() {
+            window.location.href = 'index.html';
+        }
+        window.onload = fetchDocumentDetail;
+        document.getElementById('back-button').addEventListener('click', navigateBack);
+        window.onload = fetchDocumentDetail;
+    </script>
+</body>
+
+</html>
